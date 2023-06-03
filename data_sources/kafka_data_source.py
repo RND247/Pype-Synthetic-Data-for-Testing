@@ -5,7 +5,7 @@ import json
 
 
 class KafkaDataSource(DataSource):
-    def __init__(self, kafka_endpoint, kafka_topic, s3_bucket, read_timeout_secs, batch_size = 1024):
+    def __init__(self, kafka_endpoint, kafka_topic, s3_bucket, read_timeout_secs = 300, batch_size = 1024):
         super().__init__(s3_bucket)
         self.kafka_endpoint = kafka_endpoint
         self.kafka_topic = kafka_topic
