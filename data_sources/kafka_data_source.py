@@ -48,6 +48,8 @@ class KafkaDataSource(DataSource):
                     # Check if the data will exceed the file size limit (1MB)
                     if current_file_size + data_size > file_size:
                         self.write_to_s3(current_file_data)
+                        current_file_data = []
+                        current_file_size = 0
 
                     # Add data to the current file
                     current_file_data.append(data)
