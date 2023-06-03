@@ -13,7 +13,7 @@ class DataGenerator:
         schema = {key: set() for key in column_names}
         for row in self.data.iloc():
             for key in column_names:
-                schema[key].append(str(type(row[key])))
+                schema[key].add(str(type(row[key])))
 
         return schema
 
