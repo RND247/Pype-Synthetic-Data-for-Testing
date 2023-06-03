@@ -5,11 +5,12 @@ import json
 
 
 class KafkaDataSource(DataSource):
-    def __init__(self, kafka_endpoint, kafka_topic, s3_bucket, read_timeout_secs):
+    def __init__(self, kafka_endpoint, kafka_topic, s3_bucket, read_timeout_secs, batch_size = 1024):
         super().__init__(s3_bucket)
         self.kafka_endpoint = kafka_endpoint
         self.kafka_topic = kafka_topic
         self.read_timeout_secs = read_timeout_secs
+        self.batch_size = batch_size
 
     def read_data_into_s3(self, file_size=1024 * 1024):
         # Configure Kafka consumer
@@ -28,29 +29,29 @@ class KafkaDataSource(DataSource):
         start_time = time.time()
         try:
             while (time.time() - start_time) < self.read_timeout_secs:
-                message = consumer.poll(timeout=1.0)
+                messages = consumer.consume(self.batch_size, timeout=1.0)
 
-                if message is None:
+                if messages is None:
                     continue
+                for message in messages:
+                    if message.error():
+                        if message.error().code() == KafkaError._PARTITION_EOF:
+                            # End of partition event
+                            break
+                        else:
+                            print(f"Error: {message.error().str()}")
+                            continue
 
-                if message.error():
-                    if message.error().code() == KafkaError._PARTITION_EOF:
-                        # End of partition event
-                        break
-                    else:
-                        print(f"Error: {message.error().str()}")
-                        continue
+                    data = json.loads(message.value().decode("utf-8"))
+                    data_size = len(data)
 
-                data = json.loads(message.value().decode("utf-8"))
-                data_size = len(data)
+                    # Check if the data will exceed the file size limit (1MB)
+                    if current_file_size + data_size > file_size:
+                        self.write_to_s3(current_file_data)
 
-                # Check if the data will exceed the file size limit (1MB)
-                if current_file_size + data_size > file_size:
-                    self.write_to_s3(current_file_data)
-
-                # Add data to the current file
-                current_file_data.append(data)
-                current_file_size += data_size
+                    # Add data to the current file
+                    current_file_data.append(data)
+                    current_file_size += data_size
 
         finally:
             consumer.close()
