@@ -1,2 +1,5 @@
 pandas
 faker
+boto3
+confluent_kafka
+botocore
