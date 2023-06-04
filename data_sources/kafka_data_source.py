@@ -5,19 +5,28 @@ import json
 
 
 class KafkaDataSource(DataSource):
-    def __init__(self, kafka_endpoint, kafka_topic, s3_bucket, read_timeout_secs = 300, batch_size = 1024):
-        super().__init__(s3_bucket)
+    def __init__(
+        self,
+        kafka_endpoint,
+        kafka_topic,
+        s3_bucket,
+        read_timeout_secs=300,
+        batch_size=1024,
+        decode_type="utf-8",
+    ):
+        super().__init__(s3_bucket=s3_bucket)
         self.kafka_endpoint = kafka_endpoint
         self.kafka_topic = kafka_topic
         self.read_timeout_secs = read_timeout_secs
         self.batch_size = batch_size
+        self.decode_type = decode_type
 
     def read_data_into_s3(self, file_size=1024 * 1024):
         # Configure Kafka consumer
         consumer_conf = {
-            'bootstrap.servers': self.kafka_endpoint,
-            'group.id': 'tdsd-group',
-            'auto.offset.reset': 'earliest'
+            "bootstrap.servers": self.kafka_endpoint,
+            "group.id": "tdsd-group",
+            "auto.offset.reset": "earliest",
         }
         consumer = Consumer(consumer_conf)
         consumer.subscribe([self.kafka_topic])
@@ -42,7 +51,7 @@ class KafkaDataSource(DataSource):
                             print(f"Error: {message.error().str()}")
                             continue
 
-                    data = json.loads(message.value().decode("utf-8"))
+                    data = json.loads(message.value().decode(self.decode_type))
                     data_size = len(data)
 
                     # Check if the data will exceed the file size limit (1MB)

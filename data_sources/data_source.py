@@ -18,18 +18,18 @@ class DataSource(ABC):
 
     def write_to_s3(self, data: List[Dict]):
         # Initialize S3 client
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
 
         # Convert data into parquet
         df = pd.DataFrame(data)
         parquet_buffer = BytesIO()
-        df.to_parquet(parquet_buffer, engine='pyarrow')
+        df.to_parquet(parquet_buffer, engine="pyarrow")
 
         try:
             s3.put_object(
                 Body=parquet_buffer,
                 Bucket=self.s3_bucket,
-                Key=f'data_{str(uuid.uuid4())}.json'
+                Key=f"data_{str(uuid.uuid4())}.json",
             )
         except NoCredentialsError:
             print("Failed to write to S3. Check your AWS credentials.")
