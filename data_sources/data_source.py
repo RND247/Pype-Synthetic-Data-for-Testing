@@ -29,7 +29,7 @@ class DataSource(ABC):
             s3.put_object(
                 Body=parquet_buffer,
                 Bucket=self.s3_bucket,
-                Key=f"data_{str(uuid.uuid4())}.json",
+                Key=f"data_{str(uuid.uuid4())}.parquet",
             )
         except NoCredentialsError:
             print("Failed to write to S3. Check your AWS credentials.")
