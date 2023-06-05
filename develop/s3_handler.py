@@ -15,8 +15,8 @@ logger.addHandler(file_handler)
 
 
 class S3Handler:
-    def __init__(self, bucket_name=BUCKET_NAME):
-        self.s3_handler = boto3.client("s3")
+    def __init__(self, s3_client, bucket_name=BUCKET_NAME):
+        self.s3_handler = s3_client
         self.bucket_name = bucket_name
 
         # Configure the logging
