@@ -1,7 +1,6 @@
 import pandas as pd
 from faker import Faker
 
-tracker_dict = {}
 ID = ["id"]
 FULL_NAME = ["name", "full name", "full_name"]
 FIRST_NAME = ["first name", "first_name", "fname"]
@@ -15,6 +14,7 @@ class DataGenerator:
         self.data = data
         self.fake = Faker()
         self.schema = self._create_data_schema()
+        self.tracker_dict = {}
 
     def _create_data_schema(self):
         column_names = self.data.columns.tolist()
@@ -39,14 +39,14 @@ class DataGenerator:
         return pd.DataFrame(generated_data)
 
     def generate_by_category(self, column: str, org_val):
-        if org_val in tracker_dict:
-            return tracker_dict[org_val]
+        if org_val in self.tracker_dict:
+            return self.tracker_dict[org_val]
         elif column.lower() in ID:
-            tracker_dict[org_val] = str(self.fake.pyint(0,999999999))
+            self.tracker_dict[org_val] = str(self.fake.pyint(0,999999999))
         elif column.lower() in FULL_NAME:
-            tracker_dict[org_val] = self.fake.name()
+            self.tracker_dict[org_val] = self.fake.name()
         elif column.lower() in FIRST_NAME:
-            tracker_dict[org_val] = self.fake.first_name()
+            self.tracker_dict[org_val] = self.fake.first_name()
         elif column.lower() in LAST_NAME:
-            tracker_dict[org_val] = self.fake.last_name()
-        return tracker_dict[org_val]
+            self.tracker_dict[org_val] = self.fake.last_name()
+        return self.tracker_dict[org_val]
