@@ -40,7 +40,7 @@ class KafkaDataSource(DataSource):
             while (time.time() - start_time) < self.read_timeout_secs:
                 messages = consumer.consume(self.batch_size, timeout=1.0)
 
-                if messages is None:
+                if not messages:
                     continue
                 for message in messages:
                     if message.error():

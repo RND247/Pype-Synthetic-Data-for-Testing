@@ -12,44 +12,16 @@ services:
     ports:
       - "2181:2181"
 
-  zookeeper-2:
-    image: confluentinc/cp-zookeeper
-    container_name: zookeeper-2
-    environment:
-      - ZOOKEEPER_SERVER_ID=2
-      - ZOOKEEPER_CLIENT_PORT=2182
-      - ZOOKEEPER_TICK_TIME=2000
-      - ZOOKEEPER_INIT_LIMIT=5
-      - ZOOKEEPER_SYNC_LIMIT=2
-    ports:
-      - "2182:2181"
-
   kafka-1:
     image: confluentinc/cp-kafka
     container_name: kafka-1
     depends_on:
       - zookeeper-1
-      - zookeeper-2
     environment:
       - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
     ports:
       - "9092:9092"
-
-  kafka-2:
-    image: confluentinc/cp-kafka
-    container_name: kafka-2
-    depends_on:
-      - zookeeper-1
-      - zookeeper-2
-    environment:
-      - KAFKA_BROKER_ID=2
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper-1:2181,zookeeper-2:2181
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9093
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-    ports:
-      - "9093:9092"
