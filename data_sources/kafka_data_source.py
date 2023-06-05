@@ -1,7 +1,10 @@
+import boto3
+
 from data_sources.data_source import DataSource
 from confluent_kafka import Consumer, KafkaError
 import time
 import json
+from multiprocessing import Pool
 
 
 class KafkaDataSource(DataSource):
@@ -34,6 +37,7 @@ class KafkaDataSource(DataSource):
         # Initialize variables
         current_file_size = 0
         current_file_data = []
+        s3 = boto3.client('s3')
 
         start_time = time.time()
         try:
@@ -56,7 +60,7 @@ class KafkaDataSource(DataSource):
 
                     # Check if the data will exceed the file size limit (1MB)
                     if current_file_size + data_size > file_size:
-                        self.write_to_s3(current_file_data)
+                        self.write_to_s3(current_file_data, s3)
                         current_file_data = []
                         current_file_size = 0
 
@@ -69,4 +73,18 @@ class KafkaDataSource(DataSource):
 
             # Write any remaining data to S3
         if current_file_data:
-            self.write_to_s3(current_file_data)
+            self.write_to_s3(current_file_data, s3)
+
+    def create_synthetic_data(self, num_processes=1):
+        pool = Pool(num_processes)
+
+        try:
+            # Start multiple instances of the consumer function in the process pool
+            pool.map(self.read_data_into_s3, range(num_processes))
+        except KeyboardInterrupt:
+            # Terminate the pool upon interrupt
+            pool.terminate()
+        finally:
+            # Close the pool
+            pool.close()
+            pool.join()
