@@ -1,20 +1,16 @@
 import pandas as pd
-from faker import Faker
 
-ID = ["id"]
-FULL_NAME = ["name", "full name", "full_name"]
-FIRST_NAME = ["first name", "first_name", "fname"]
-LAST_NAME = ["last name", "last_name", "surname", "lname"]
+from column import BaseColumn
 
 
 class DataGenerator:
     data: pd.DataFrame
 
-    def __init__(self, data):
+    def __init__(self, data, columns_types_dict):
         self.data = data
-        self.fake = Faker()
         self.schema = self._create_data_schema()
         self.tracker_dict = {}
+        self.columns_types_dict = columns_types_dict
 
     def _create_data_schema(self):
         column_names = self.data.columns.tolist()
@@ -31,22 +27,17 @@ class DataGenerator:
         for column in self.data.columns.tolist():
             if column in pii_columns:
                 # Randomize a value for the column
-                generated_data[column] = [self.generate_by_category(column, self.data[column].values[i])
+                generated_data[column] = [self.generate_by_category(self.columns_types_dict[column],
+                                                                    self.data[column].values[i])
                                           for i in range(num_of_rows)]
             else:
                 # Take the existing value of the column
                 generated_data[column] = self.data[column].values
         return pd.DataFrame(generated_data)
 
-    def generate_by_category(self, column: str, org_val):
+    def generate_by_category(self, column: BaseColumn, org_val):
         if org_val in self.tracker_dict:
             return self.tracker_dict[org_val]
-        elif column.lower() in ID:
-            self.tracker_dict[org_val] = str(self.fake.pyint(0,999999999))
-        elif column.lower() in FULL_NAME:
-            self.tracker_dict[org_val] = self.fake.name()
-        elif column.lower() in FIRST_NAME:
-            self.tracker_dict[org_val] = self.fake.first_name()
-        elif column.lower() in LAST_NAME:
-            self.tracker_dict[org_val] = self.fake.last_name()
+        else:
+            self.tracker_dict[org_val] = column().generate_value()
         return self.tracker_dict[org_val]
