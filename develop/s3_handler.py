@@ -40,10 +40,9 @@ class S3Handler:
     def _divide_data_into_partitions(self, data):
         partitions = {}
         df = pd.read_parquet(data, engine="pyarrow")
-        for value in set(df[self.divider_column]):
-            filter = df[self.divider_column] == value
-            filtered_df = df[filter]
+        grouped = df.groupby(pd.Grouper(key=self.divider_column))
+        for group_name, group_data in grouped:
             parquet_buffer = BytesIO()
-            filtered_df.to_parquet(parquet_buffer, engine="pyarrow")
-            partitions[value] = parquet_buffer
+            group_data.to_parquet(parquet_buffer, engine="pyarrow")
+            partitions[group_name] = parquet_buffer
         return partitions
