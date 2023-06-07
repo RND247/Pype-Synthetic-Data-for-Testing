@@ -2,7 +2,6 @@ from abc import ABC
 import string, random
 from faker import Faker
 
-
 class BaseColumn(ABC):
     python_type: type
     category: str
@@ -39,7 +38,7 @@ class BaseColumn(ABC):
 class GeneralTextColumn(BaseColumn):
     max_length: int
 
-    def __init__(self, category="GeneralText", max_length=20, is_capitalized=True):
+    def __init__(self, category="GeneralText", max_length=20, is_capitalized=True, **kwargs):
         super().__init__(str, category)
         self.max_length = max_length
         self.is_capitalized = is_capitalized
@@ -57,13 +56,13 @@ class GeneralTextColumn(BaseColumn):
 
 
 class FirstNameColumn(GeneralTextColumn):
-    def __init__(self, max_length=15, is_capitalized=True):
-        super().__init__("FirstName", max_length, is_capitalized)
+    def __init__(self, max_length=15, is_capitalized=True, **kwargs):
+        super().__init__("FirstName", max_length, is_capitalized, **kwargs)
 
 
 class LastNameColumn(GeneralTextColumn):
-    def __init__(self, max_length=15, is_capitalized=True):
-        super().__init__("LastName", max_length, is_capitalized)
+    def __init__(self, max_length=15, is_capitalized=True, **kwargs):
+        super().__init__("LastName", max_length, is_capitalized, **kwargs)
 
 
 class FullNameColumn(GeneralTextColumn):
@@ -97,8 +96,8 @@ class City(GeneralTextColumn):
 
 
 class FullStreet(GeneralTextColumn):
-    def __init__(self, max_length=0):
-        super().__init__("FullStreet", max_length=max_length)
+    def __init__(self, max_length=0, **kwargs):
+        super().__init__("FullStreet", max_length=max_length, **kwargs)
 
 
 class StreetName(GeneralTextColumn):
@@ -148,7 +147,7 @@ class GeneralIntColumn(BaseColumn):
     min_value: int
     max_value: int
 
-    def __init__(self, category="GeneralInt", min_value=0, max_value=100):
+    def __init__(self, category="GeneralInt", min_value=0, max_value=100, **kwargs):
         super().__init__(int, category)
         self.min_value = min_value
         self.max_value = max_value
@@ -156,3 +155,32 @@ class GeneralIntColumn(BaseColumn):
     def generate_value(self):
         value = random.randint(self.min_value, self.max_value)
         return value
+
+
+class Age(GeneralIntColumn):
+    def __init__(self, min_value=0, max_value=110, **kwargs):
+        super().__init__("Age", min_value=min_value, max_value=max_value, **kwargs)
+
+
+NAME_FUNC_DICT = {  # Wraparound. TODO: Fix it in generator.py - generate_by_category()
+    "GeneralTextColumn": GeneralTextColumn,
+    "FirstNameColumn": FirstNameColumn,
+    "LastNameColumn": LastNameColumn,
+    "FullNameColumn": FullNameColumn,
+    "SocialSecurityNumber": SocialSecurityNumber,
+    "Address": Address,
+    "Country": Country,
+    "CountryCode": CountryCode,
+    "City": City,
+    "FullStreet": FullStreet,
+    "StreetName": StreetName,
+    "Postcode": Postcode,
+    "PhoneNumber": PhoneNumber,
+    "Email": Email,
+    "BBAN": BBAN,
+    "IBAN": IBAN,
+    "Date": Date,
+    "Time": Time,
+    "GeneralIntColumn": GeneralIntColumn,
+    "Age": Age,
+}

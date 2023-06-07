@@ -1,0 +1,18 @@
+first_name:
+  is_pii: True
+  module: FirstNameColumn
+  max_length: 15
+  is_capitalized: True
+last_name:
+  is_pii: True
+  module: LastNameColumn
+  max_length: 15
+  is_capitalized: True
+full_street:
+  is_pii: True
+  module: FullStreet
+age:
+  is_pii: False
+  module: Age
+  min_value: 0
+  max_value: 120

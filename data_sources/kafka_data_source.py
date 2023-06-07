@@ -24,7 +24,7 @@ class KafkaDataSource(DataSource):
         self.batch_size = batch_size
         self.decode_type = decode_type
 
-    def read_data_into_s3(self, file_size=1024 * 1024):
+    def read_data_into_s3(self, file_size=1024 * 1024, divider_column=None):
         # Configure Kafka consumer
         consumer_conf = {
             "bootstrap.servers": self.kafka_endpoint,
@@ -60,7 +60,7 @@ class KafkaDataSource(DataSource):
 
                     # Check if the data will exceed the file size limit (1MB)
                     if current_file_size + data_size > file_size:
-                        self.write_to_s3(current_file_data, s3)
+                        self.write_to_s3(current_file_data, s3, divider_column)
                         current_file_data = []
                         current_file_size = 0
 
@@ -73,14 +73,14 @@ class KafkaDataSource(DataSource):
 
             # Write any remaining data to S3
         if current_file_data:
-            self.write_to_s3(current_file_data, s3)
+            self.write_to_s3(current_file_data, s3, divider_column)
 
-    def create_synthetic_data(self, num_processes=1):
+    def create_synthetic_data(self, num_processes=1, divider_column=None):
         pool = Pool(num_processes)
 
         try:
             # Start multiple instances of the consumer function in the process pool
-            pool.map(self.read_data_into_s3, range(num_processes))
+            pool.map(lambda x: self.read_data_into_s3(divider_column=divider_column), range(num_processes))
         except KeyboardInterrupt:
             # Terminate the pool upon interrupt
             pool.terminate()

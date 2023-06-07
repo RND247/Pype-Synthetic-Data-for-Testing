@@ -1,5 +1,6 @@
-pandas
-faker
-boto3
+pandas~=2.0.2
+faker~=18.9.1
+boto3~=1.26.146
 confluent_kafka
-botocore
+botocore~=1.29.146
+PyYAML~=6.0
