@@ -1,6 +1,9 @@
-import boto3
-from botocore.exceptions import NoCredentialsError
 import logging
+from io import BytesIO
+
+import boto3
+import pandas as pd
+from botocore.exceptions import NoCredentialsError
 
 BUCKET_NAME = "test-pype"
 LOG_PATH = 'logs/s3_logs.log'
@@ -15,23 +18,32 @@ logger.addHandler(file_handler)
 
 
 class S3Handler:
-    def __init__(self, s3_client, bucket_name=BUCKET_NAME):
+    def __init__(self, s3_client, bucket_name=BUCKET_NAME, divider_column=None):
         self.s3_handler = s3_client
         self.bucket_name = bucket_name
-
-        # Configure the logging
+        self.divider_column = divider_column
 
     def upload(self, key, data):
         try:
-            self.s3_handler.put_object(
-                Bucket=self.bucket_name,
-                Key=key,
-                Body=data
-            )
+            # If there's no divider, upload it as one file into the bucket
+            if self.divider_column is None:
+                self.s3_handler.put_object(Bucket=self.bucket_name, Key=key, Body=data.getvalue())
+            else:
+                partitions = self._divide_data_into_partitions(data)
+                for partition, partition_data in partitions.items():
+                    self.s3_handler.put_object(Bucket=self.bucket_name, Key=f"{partition}/{key}",
+                                               Body=partition_data.getvalue())
             logger.info(f"Uploaded to S3: s3://{self.bucket_name}/{key}")
         except NoCredentialsError:
             logger.error("Failed to write to S3. Check your AWS credentials.")
 
-    def upload_file(self, file_path, file_name):
-        with open(file_path, "rb") as f:
-            self.s3_handler.upload_fileobj(f, self.bucket_name, file_name)
+    def _divide_data_into_partitions(self, data):
+        partitions = {}
+        df = pd.read_parquet(data, engine="pyarrow")
+        for value in set(df[self.divider_column]):
+            filter = df[self.divider_column] == value
+            filtered_df = df[filter]
+            parquet_buffer = BytesIO()
+            filtered_df.to_parquet(parquet_buffer, engine="pyarrow")
+            partitions[value] = parquet_buffer
+        return partitions
