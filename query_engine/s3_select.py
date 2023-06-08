@@ -31,7 +31,7 @@ class S3Select:
         for event in response['Payload']:
             if 'Records' in event:
                 records = event['Records']['Payload'].decode('utf-8')
-                records = records.split("\n")[0:-1]
+                records = records.split("\n")[:-1]
                 json_list = list(map(lambda x: json.loads(x), records))
                 return pd.DataFrame(json_list)
             elif 'Stats' in event:
