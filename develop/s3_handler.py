@@ -1,9 +1,10 @@
 import logging
 from io import BytesIO
 
-import boto3
 import pandas as pd
 from botocore.exceptions import NoCredentialsError
+import pyarrow.parquet as pq
+import os
 
 BUCKET_NAME = "test-pype"
 LOG_PATH = 'logs/s3_logs.log'
@@ -12,9 +13,9 @@ LOG_PATH = 'logs/s3_logs.log'
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler = logging.FileHandler(LOG_PATH)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+# file_handler = logging.FileHandler(LOG_PATH)
+# file_handler.setFormatter(formatter)
+# logger.addHandler(file_handler)
 
 
 class S3Handler:
@@ -46,3 +47,21 @@ class S3Handler:
             group_data.to_parquet(parquet_buffer, engine="pyarrow")
             partitions[group_name] = parquet_buffer
         return partitions
+
+    def _download_s3_file(self, key, local_file_path):
+        self.s3_handler.download_file(self.bucket_name, key, local_file_path)
+
+    def get_s3_file_schema(self, key):
+        local_file_path='local-file.parquet'
+        self._download_s3_file(key, local_file_path)
+        parquet_file = pq.ParquetFile(local_file_path)
+        schema = parquet_file.schema
+        json_schema = {}
+        for column in schema.to_arrow_schema():
+            json_schema[column.name] = column.type
+        try:
+            os.remove(local_file_path)
+            print(f"File '{local_file_path}' deleted successfully.")
+        except OSError as e:
+            print(f"Error occurred while deleting file '{local_file_path}': {e}")
+        return json_schema
