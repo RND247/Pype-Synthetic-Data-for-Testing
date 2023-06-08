@@ -4,3 +4,4 @@ boto3~=1.26.146
 confluent_kafka
 botocore~=1.29.146
 PyYAML~=6.0
+pyarrow
