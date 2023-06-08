@@ -31,6 +31,6 @@ def test_generate_synth_data_with_pii_columns():
                                                                               f"got {data_frame[column][i]} in both tables"
         else:
             for i in range(synth_data.shape[0]):
-                assert synth_data[column].values[i] == data_frame[column][i], f"Expected euqal values," \
+                assert synth_data[column].values[i] == data_frame[column][i], f"Expected equal values," \
                                                                               f"got {synth_data[column].values[i]} and " \
                                                                               f"{data_frame[column][i]}"
