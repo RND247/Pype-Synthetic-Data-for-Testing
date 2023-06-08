@@ -1,10 +1,17 @@
+import json
+import time
+from multiprocessing import Pool
+
 import boto3
+import pandas as pd
+from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Producer
 
 from data_sources.data_source import DataSource
-from confluent_kafka import Consumer, KafkaError
-import time
-import json
-from multiprocessing import Pool
+
+# Kafka broker configuration
+BOOTSTRAP_SERVERS = 'localhost:9092'
+TOPIC = 'my-topic'
 
 
 class KafkaDataSource(DataSource):
@@ -88,3 +95,10 @@ class KafkaDataSource(DataSource):
             # Close the pool
             pool.close()
             pool.join()
+
+    def _write_df_to_data_source(self, df: pd.DataFrame, topic=TOPIC, **kwargs):
+        producer = Producer({'bootstrap.servers': BOOTSTRAP_SERVERS})
+        for row in range(df.shape[0]):
+            json_data = json.dumps(df.loc[row].to_dict())
+            producer.produce(topic, value=json_data.encode('utf-8'))
+            producer.flush()
