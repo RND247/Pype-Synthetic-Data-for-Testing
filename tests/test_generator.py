@@ -2,6 +2,7 @@ import pandas as pd
 import yaml
 
 from generator import DataGenerator
+from data_sources.kafka_data_source import KafkaDataSource
 
 COLUMN_CONFIG_PATH = "../config/column_config-test_synthetic_data.yml"
 
@@ -34,3 +35,21 @@ def test_generate_synth_data_with_pii_columns():
                 assert synth_data[column].values[i] == data_frame[column][i], f"Expected equal values," \
                                                                               f"got {synth_data[column].values[i]} and " \
                                                                               f"{data_frame[column][i]}"
+
+
+def test_kafka_synth_data():
+    kafka = KafkaDataSource('localhost:9092', 'test-pype', 'test-pype')
+    original_data = \
+        {
+            'first_name': ["Ran", "Yuval", "Ran", "John", "Mike"],
+            'last_name': ["Dayan", "Mund", "Dayan", "Johnson", "Tyson"],
+            'full_street': ["Hairus 5", "Herut 13", "Hairus 5", "Florentin 10", "Rotshild 11"],
+            'age': [28, 88, 28, 43, 46]
+        }
+
+    data_frame = pd.DataFrame(original_data)
+    # kafka._write_df_to_data_source(data_frame)
+    kafka.read_data_into_s3(
+        is_synthetic=True,
+        config_yml_path="/Users/randayan/PycharmProjects/TDSD/config/column_config-test_synthetic_data.yml"
+    )

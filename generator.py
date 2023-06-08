@@ -6,7 +6,7 @@ from column import NAME_FUNC_DICT  # Wraparound
 class DataGenerator:
     data: pd.DataFrame
 
-    def __init__(self, data, column_config):
+    def __init__(self, data: pd.DataFrame, column_config):
         self.data = data
         self.schema = self._create_data_schema()
         self.tracker_dict = {}

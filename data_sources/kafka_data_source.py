@@ -31,7 +31,7 @@ class KafkaDataSource(DataSource):
         self.batch_size = batch_size
         self.decode_type = decode_type
 
-    def read_data_into_s3(self, file_size=1024 * 1024, divider_column=None):
+    def read_data_into_s3(self, file_size=1024 * 1024, divider_column=None, is_synthetic=False, config_yml_path=None):
         # Configure Kafka consumer
         consumer_conf = {
             "bootstrap.servers": self.kafka_endpoint,
@@ -67,7 +67,8 @@ class KafkaDataSource(DataSource):
 
                     # Check if the data will exceed the file size limit (1MB)
                     if current_file_size + data_size > file_size:
-                        self.write_to_s3(current_file_data, s3, divider_column)
+                        self.write_to_s3(current_file_data, s3, divider_column, is_synthetic=is_synthetic,
+                                         config_yml_path=config_yml_path)
                         current_file_data = []
                         current_file_size = 0
 
@@ -80,7 +81,8 @@ class KafkaDataSource(DataSource):
 
             # Write any remaining data to S3
         if current_file_data:
-            self.write_to_s3(current_file_data, s3, divider_column)
+            self.write_to_s3(current_file_data, s3, divider_column, is_synthetic=is_synthetic,
+                             config_yml_path=config_yml_path)
 
     def create_synthetic_data(self, num_processes=1, divider_column=None):
         pool = Pool(num_processes)
