@@ -58,15 +58,3 @@ class S3Select:
                 if limit and len(results) >= limit:
                     return results
         return results
-
-
-if __name__ == '__main__':
-    # Example usage
-    s3_select = S3Select(
-        bucket_name='pype-yuval-test',
-        aws_region='eu-central-1'
-    )
-
-    key = 'pype-test/myfile1.parquet'
-    query_expression = 'SELECT * FROM s3object where age > 26'
-    s3_select.execute_query_for_prefix('pype-test', query_expression)
