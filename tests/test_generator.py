@@ -38,7 +38,7 @@ def test_generate_synth_data_with_pii_columns():
 
 
 def test_kafka_synth_data():
-    kafka = KafkaDataSource('localhost:9092', 'my-topic-21', 'pype-yuval-test', read_timeout_secs=30)
+    kafka = KafkaDataSource('localhost:9092', 'my-topic', 'pype-test', read_timeout_secs=30)
     original_data = \
         {
             'first_name': ["Ran", "Yuval", "Ran", "John", "Mike"],
