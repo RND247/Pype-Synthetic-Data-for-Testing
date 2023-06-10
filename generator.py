@@ -8,10 +8,10 @@ class DataGenerator:
     data: pd.DataFrame
     shared_memory: SharedMemoryManager
 
-    def __init__(self, data: pd.DataFrame, column_config, shared_memory=None):
+    def __init__(self, data: pd.DataFrame, column_config):
         self.data = data
         self.schema = self._create_data_schema()
-        self.shared_memory = shared_memory
+        self.shared_memory = SharedMemoryManager()
         self.column_config = column_config
 
     def _create_data_schema(self):
@@ -45,5 +45,5 @@ class DataGenerator:
             module = NAME_FUNC_DICT[column['module']]
             instance = module(**column)
             new_val = instance.generate_value()
-            self.shared_memory.set_value(org_val, new_val)
+            new_val = self.shared_memory.set_value(org_val, new_val)
         return new_val

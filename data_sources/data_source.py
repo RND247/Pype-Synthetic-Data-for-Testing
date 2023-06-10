@@ -52,15 +52,14 @@ class DataSource(ABC):
         dfs = [pd.read_parquet(parquet_path, engine="pyarrow") for parquet_path in parquet_paths]
         self.write_dfs_to_data_source(dfs, num_processes=num_processes, **kwargs)
 
-    def write_to_s3(self, data: List[Dict], s3, divider_column=None, is_synthetic=False, config_yml_path=None,
-                    shared_memory=None):
+    def write_to_s3(self, data: List[Dict], s3, divider_column=None, is_synthetic=False, config_yml_path=None):
         s3_handler = S3Handler(bucket_name=self.s3_bucket, s3_client=s3, divider_column=divider_column)
         # Convert data into parquet
         df = pd.DataFrame(data)
         if is_synthetic:
             with open(config_yml_path, 'r') as file:
                 column_config = yaml.safe_load(file)
-            dg = DataGenerator(df, column_config, shared_memory)
+            dg = DataGenerator(df, column_config)
             df = dg.generate_data()
         parquet_buffer = BytesIO()
         df.to_parquet(parquet_buffer, engine="pyarrow")
