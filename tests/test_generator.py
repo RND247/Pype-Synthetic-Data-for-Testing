@@ -38,7 +38,7 @@ def test_generate_synth_data_with_pii_columns():
 
 
 def test_kafka_synth_data():
-    kafka = KafkaDataSource('localhost:9092', 'test-pype', 'test-pype')
+    kafka = KafkaDataSource('localhost', 'my-topic-dayan2', 'test-pype', read_timeout_secs=10)
     original_data = \
         {
             'first_name': ["Ran", "Yuval", "Ran", "John", "Mike"],
@@ -48,8 +48,10 @@ def test_kafka_synth_data():
         }
 
     data_frame = pd.DataFrame(original_data)
-    # kafka._write_df_to_data_source(data_frame)
-    kafka.read_data_into_s3(
+    for _ in range(1000):
+        kafka._write_df_to_data_source(data_frame)
+    kafka.create_intermediate_data(
+        num_processes=3,
         is_synthetic=True,
         config_yml_path="/Users/randayan/PycharmProjects/TDSD/config/column_config-test_synthetic_data.yml"
     )
