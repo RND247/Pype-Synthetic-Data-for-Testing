@@ -1,4 +1,4 @@
-from query_engine.s3_select import S3Select
+from src.query_engine.s3_select import S3Select
 
 
 def test_s3_select():

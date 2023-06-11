@@ -10,7 +10,7 @@ from confluent_kafka import Producer
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import NewTopic
 
-from data_sources.data_source import DataSource
+from src.data_sources.data_source import DataSource
 
 # Kafka broker configuration
 BOOTSTRAP_SERVERS = 'localhost:9092'

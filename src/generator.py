@@ -1,7 +1,7 @@
 import pandas as pd
 
-from column import NAME_FUNC_DICT  # Wraparound
-from utils.shared_memory_manager import SharedMemoryManager
+from src.column import NAME_FUNC_DICT  # Wraparound
+from src.utils.shared_memory_manager import SharedMemoryManager
 
 
 class DataGenerator:

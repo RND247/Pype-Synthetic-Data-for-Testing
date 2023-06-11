@@ -2,10 +2,10 @@ import pandas as pd
 import yaml
 from pathlib import Path
 
-from generator import DataGenerator
-from data_sources.kafka_data_source import KafkaDataSource
+from src.generator import DataGenerator
+from src.data_sources.kafka_data_source import KafkaDataSource
 
-COLUMN_CONFIG_PATH = "../config/column_config-test_synthetic_data.yml"
+COLUMN_CONFIG_PATH = Path.cwd().parent / "src" / "config" / "column_config-test_synthetic_data.yml"
 
 
 def test_generate_synth_data_with_pii_columns():
@@ -56,5 +56,5 @@ def test_kafka_synth_data():
     kafka.create_intermediate_data(
         num_processes=num_processes,
         is_synthetic=True,
-        config_yml_path=Path.cwd().parent / "config" / "column_config-test_synthetic_data.yml"
+        config_yml_path=Path.cwd().parent / "src" / "config" / "column_config-test_synthetic_data.yml"
     )
