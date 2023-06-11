@@ -1,5 +1,6 @@
 import pandas as pd
 import yaml
+from pathlib import Path
 
 from generator import DataGenerator
 from data_sources.kafka_data_source import KafkaDataSource
@@ -38,20 +39,22 @@ def test_generate_synth_data_with_pii_columns():
 
 
 def test_kafka_synth_data():
-    kafka = KafkaDataSource('localhost:9092', 'my-topic', 'pype-test', read_timeout_secs=30)
+    kafka = KafkaDataSource('localhost:9092', 'coolcoolcool', 'test-pype', read_timeout_secs=10)
+    num_partitions = num_processes = 3
     original_data = \
         {
-            'first_name': ["Ran", "Yuval", "Ran", "John", "Mike"],
-            'last_name': ["Dayan", "Mund", "Dayan", "Johnson", "Tyson"],
-            'full_street': ["Hairus 5", "Herut 13", "Hairus 5", "Florentin 10", "Rotshild 11"],
-            'age': [28, 88, 28, 43, 46]
+            'first_name': ["Ran", "Yuval", "Ran", "John", "Mike", " Lenny", "Rojer", "Benny", "Dani", "Tomer"],
+            'last_name': ["Dayan", "Mund", "Dayan", "Johnson", "Tyson", "Kravitz", "Smith", "Ben", "Dan", "Cohen"],
+            'full_street': ["Hairus 5", "Herut 13", "Hairus 5", "Florentin 10", "Rotshild 11", "Summer 9",
+                            "Alexander 8", "Levontin 5", "Levon 9", "Hairus 8"],
+            'age': [28, 88, 28, 43, 46, 74, 45, 42, 48, 99]
         }
 
     data_frame = pd.DataFrame(original_data)
-    for _ in range(1000):
-        kafka._write_df_to_data_source(data_frame, should_create_topic=True)
+    for i in range(1000):
+        kafka._write_df_to_data_source(data_frame, should_create_topic=i == 0, num_partitions=num_partitions)
     kafka.create_intermediate_data(
-        num_processes=3,
+        num_processes=num_processes,
         is_synthetic=True,
-        config_yml_path=r"C:\Users\yuval\Documents\Dev\TDSD\config\column_config-test_synthetic_data.yml"
+        config_yml_path=Path.cwd().parent / "config" / "column_config-test_synthetic_data.yml"
     )

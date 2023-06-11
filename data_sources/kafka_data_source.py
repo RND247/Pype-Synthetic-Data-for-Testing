@@ -2,7 +2,6 @@ import json
 import time
 from multiprocessing import Pool
 from functools import partial
-from utils.shared_memory_manager import SharedMemoryManager
 
 import boto3
 import pandas as pd
@@ -15,7 +14,7 @@ from data_sources.data_source import DataSource
 
 # Kafka broker configuration
 BOOTSTRAP_SERVERS = 'localhost:9092'
-TOPIC = 'my-topic-bb'
+TOPIC = 'my-topic'
 
 
 class KafkaDataSource(DataSource):
@@ -35,7 +34,8 @@ class KafkaDataSource(DataSource):
         self.batch_size = batch_size
         self.decode_type = decode_type
 
-    def read_data_into_s3(self, file_size=1024 * 1024, divider_column=None, is_synthetic=False, config_yml_path=None):
+    def read_data_into_s3(self, ps_id=0, file_size=1024*1024, divider_column=None, is_synthetic=False,
+                          config_yml_path=None):
         # Configure Kafka consumer
         consumer_conf = {
             "bootstrap.servers": self.kafka_endpoint,
@@ -57,10 +57,8 @@ class KafkaDataSource(DataSource):
                 messages = consumer.consume(num_messages=self.batch_size, timeout=1.0)
 
                 if not messages:
-                    print(f"{file_size}: No messages to read")
                     continue
                 for message in messages:
-                    print(f"{file_size}: got messages")
                     if message.error():
                         if message.error().code() == KafkaError._PARTITION_EOF:
                             # End of partition event
@@ -93,16 +91,16 @@ class KafkaDataSource(DataSource):
     def create_intermediate_data(self, num_processes=1, divider_column=None, is_synthetic=False, config_yml_path=None):
         pool = Pool(num_processes)
 
-        shared_memory = None
         try:
-            if is_synthetic:
-                shared_memory = SharedMemoryManager()
-                shared_memory.create_shared_memory()
+            partial_func = partial(
+                self.read_data_into_s3,
+                file_size=1024 * 1024,
+                divider_column=divider_column,
+                is_synthetic=is_synthetic,
+                config_yml_path=config_yml_path
+            )
+            pool.map(partial_func, range(num_processes))
 
-            # Start multiple instances of the consumer function in the process pool
-            partial_func = partial(self.read_data_into_s3, divider_column=divider_column, is_synthetic=is_synthetic,
-                                   config_yml_path=config_yml_path)
-            pool.map(partial_func, [1024*1024]*num_processes)
         except KeyboardInterrupt:
             # Terminate the pool upon interrupt
             pool.terminate()
@@ -111,15 +109,13 @@ class KafkaDataSource(DataSource):
             pool.close()
             pool.join()
 
-            if shared_memory:
-                shared_memory.stop_shared_memory()
-
-    def _write_df_to_data_source(self, df: pd.DataFrame, should_create_topic=False, topic=None, **kwargs):
+    def _write_df_to_data_source(self, df: pd.DataFrame, should_create_topic=False, topic=None,
+                                 num_partitions=1, **kwargs):
         topic = topic or self.kafka_topic
         producer = Producer({'bootstrap.servers': BOOTSTRAP_SERVERS})
         if should_create_topic:
             admin_client = AdminClient({'bootstrap.servers': BOOTSTRAP_SERVERS})
-            new_topic = NewTopic(topic, num_partitions=3, replication_factor=1)
+            new_topic = NewTopic(topic, num_partitions=num_partitions, replication_factor=1)
             admin_client.create_topics([new_topic])
         for row in range(df.shape[0]):
             json_data = json.dumps(df.loc[row].to_dict())
