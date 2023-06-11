@@ -1,15 +1,17 @@
 import pandas as pd
 
 from column import NAME_FUNC_DICT  # Wraparound
+from utils.shared_memory_manager import SharedMemoryManager
 
 
 class DataGenerator:
     data: pd.DataFrame
+    shared_memory: SharedMemoryManager
 
-    def __init__(self, data, column_config):
+    def __init__(self, data: pd.DataFrame, column_config):
         self.data = data
         self.schema = self._create_data_schema()
-        self.tracker_dict = {}
+        self.shared_memory = SharedMemoryManager()
         self.column_config = column_config
 
     def _create_data_schema(self):
@@ -36,10 +38,12 @@ class DataGenerator:
         return pd.DataFrame(generated_data)
 
     def generate_by_category(self, column: dict[str], org_val):
-        if org_val in self.tracker_dict:
-            return self.tracker_dict[org_val]
+        memory_val = self.shared_memory.get_value(org_val)
+        if memory_val:
+            return memory_val
         else:
             module = NAME_FUNC_DICT[column['module']]
             instance = module(**column)
-            self.tracker_dict[org_val] = instance.generate_value()
-        return self.tracker_dict[org_val]
+            new_val = instance.generate_value()
+            new_val = self.shared_memory.set_value(org_val, new_val)
+        return new_val

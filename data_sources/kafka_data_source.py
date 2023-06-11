@@ -1,11 +1,14 @@
 import json
 import time
 from multiprocessing import Pool
+from functools import partial
 
 import boto3
 import pandas as pd
 from confluent_kafka import Consumer, KafkaError
 from confluent_kafka import Producer
+from confluent_kafka.admin import AdminClient
+from confluent_kafka.cimpl import NewTopic
 
 from data_sources.data_source import DataSource
 
@@ -21,7 +24,7 @@ class KafkaDataSource(DataSource):
         kafka_topic,
         s3_bucket,
         read_timeout_secs=300,
-        batch_size=1024,
+        batch_size=1,
         decode_type="utf-8",
     ):
         super().__init__(s3_bucket=s3_bucket)
@@ -31,13 +34,15 @@ class KafkaDataSource(DataSource):
         self.batch_size = batch_size
         self.decode_type = decode_type
 
-    def read_data_into_s3(self, file_size=1024 * 1024, divider_column=None):
+    def read_data_into_s3(self, ps_id=0, file_size=1024*1024, divider_column=None, is_synthetic=False,
+                          config_yml_path=None):
         # Configure Kafka consumer
         consumer_conf = {
             "bootstrap.servers": self.kafka_endpoint,
-            "group.id": "tdsd-group",
+            "group.id": "pype-group",
             "auto.offset.reset": "earliest",
         }
+
         consumer = Consumer(consumer_conf)
         consumer.subscribe([self.kafka_topic])
 
@@ -49,7 +54,7 @@ class KafkaDataSource(DataSource):
         start_time = time.time()
         try:
             while (time.time() - start_time) < self.read_timeout_secs:
-                messages = consumer.consume(self.batch_size, timeout=1.0)
+                messages = consumer.consume(num_messages=self.batch_size, timeout=1.0)
 
                 if not messages:
                     continue
@@ -59,7 +64,6 @@ class KafkaDataSource(DataSource):
                             # End of partition event
                             break
                         else:
-                            print(f"Error: {message.error().str()}")
                             continue
 
                     data = json.loads(message.value().decode(self.decode_type))
@@ -67,7 +71,8 @@ class KafkaDataSource(DataSource):
 
                     # Check if the data will exceed the file size limit (1MB)
                     if current_file_size + data_size > file_size:
-                        self.write_to_s3(current_file_data, s3, divider_column)
+                        self.write_to_s3(current_file_data, s3, divider_column, is_synthetic=is_synthetic,
+                                         config_yml_path=config_yml_path)
                         current_file_data = []
                         current_file_size = 0
 
@@ -80,14 +85,22 @@ class KafkaDataSource(DataSource):
 
             # Write any remaining data to S3
         if current_file_data:
-            self.write_to_s3(current_file_data, s3, divider_column)
+            self.write_to_s3(current_file_data, s3, divider_column, is_synthetic=is_synthetic,
+                             config_yml_path=config_yml_path)
 
-    def create_synthetic_data(self, num_processes=1, divider_column=None):
+    def create_intermediate_data(self, num_processes=1, divider_column=None, is_synthetic=False, config_yml_path=None):
         pool = Pool(num_processes)
 
         try:
-            # Start multiple instances of the consumer function in the process pool
-            pool.map(lambda x: self.read_data_into_s3(divider_column=divider_column), range(num_processes))
+            partial_func = partial(
+                self.read_data_into_s3,
+                file_size=1024 * 1024,
+                divider_column=divider_column,
+                is_synthetic=is_synthetic,
+                config_yml_path=config_yml_path
+            )
+            pool.map(partial_func, range(num_processes))
+
         except KeyboardInterrupt:
             # Terminate the pool upon interrupt
             pool.terminate()
@@ -96,8 +109,14 @@ class KafkaDataSource(DataSource):
             pool.close()
             pool.join()
 
-    def _write_df_to_data_source(self, df: pd.DataFrame, topic=TOPIC, **kwargs):
+    def _write_df_to_data_source(self, df: pd.DataFrame, should_create_topic=False, topic=None,
+                                 num_partitions=1, **kwargs):
+        topic = topic or self.kafka_topic
         producer = Producer({'bootstrap.servers': BOOTSTRAP_SERVERS})
+        if should_create_topic:
+            admin_client = AdminClient({'bootstrap.servers': BOOTSTRAP_SERVERS})
+            new_topic = NewTopic(topic, num_partitions=num_partitions, replication_factor=1)
+            admin_client.create_topics([new_topic])
         for row in range(df.shape[0]):
             json_data = json.dumps(df.loc[row].to_dict())
             producer.produce(topic, value=json_data.encode('utf-8'))
