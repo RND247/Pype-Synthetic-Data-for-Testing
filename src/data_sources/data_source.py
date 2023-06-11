@@ -7,11 +7,11 @@ from typing import List, Dict
 
 import yaml
 
-from generator import DataGenerator
+from src.generator import DataGenerator
 
 import pandas as pd
 
-from develop.s3_handler import S3Handler
+from src.utils.s3_handler import S3Handler
 
 
 class DataSource(ABC):

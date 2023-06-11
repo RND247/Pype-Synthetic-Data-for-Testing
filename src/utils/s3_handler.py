@@ -1,5 +1,6 @@
 import logging
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 from botocore.exceptions import NoCredentialsError
@@ -7,15 +8,15 @@ import pyarrow.parquet as pq
 import os
 
 BUCKET_NAME = "test-pype"
-LOG_PATH = 'logs/s3_logs.log'
+LOG_PATH = Path.cwd().parent / "logs" / "s3_logs.log"
 
 # Set up logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-# file_handler = logging.FileHandler(LOG_PATH)
-# file_handler.setFormatter(formatter)
-# logger.addHandler(file_handler)
+file_handler = logging.FileHandler(LOG_PATH, mode='w')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 
 class S3Handler:
